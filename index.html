@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Trade Floor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky shop bar with the replay clock → trade selector → either a trade board (tables) or a stock sheet (price head, chart, six stat panels in course order) */
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --sunk:#E3E7EC; --ink:#131C28; --muted:#566273; --line:#D2D8E0;
+  --blue:#1C4C9A; --blue-soft:#E3EBF7; --on-blue:#FFFFFF;
+  --yellow:#F2B200; --on-yellow:#1A1300;
+  --up:#0A7642; --down:#BE2C24; --up-soft:#DFF2E8; --down-soft:#FBE4E2;
+  --chart-line:#1C4C9A; --chart-top:rgba(28,76,154,.22); --chart-bottom:rgba(28,76,154,0); --chart-grid:rgba(19,28,40,.07);
+  --vol-up:rgba(10,118,66,.35); --vol-down:rgba(190,44,36,.35); --bench:#8A6A00;
+  --bar-bg:#131C28; --bar-fg:#EDF0F3; --bar-line:rgba(237,240,243,.35);
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",Roboto,Arial,sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E141B; --surface:#161F29; --sunk:#1D2833; --ink:#E5EAF0; --muted:#94A1B1; --line:#2A3644;
+  --blue:#7EA6EE; --blue-soft:#1C2B42; --on-blue:#0E141B;
+  --yellow:#F2B200; --on-yellow:#1A1300;
+  --up:#3DCB82; --down:#F2695E; --up-soft:#16342A; --down-soft:#3D1F1E;
+  --chart-line:#7EA6EE; --chart-top:rgba(126,166,238,.25); --chart-bottom:rgba(126,166,238,0); --chart-grid:rgba(229,234,240,.06);
+  --vol-up:rgba(61,203,130,.35); --vol-down:rgba(242,105,94,.35); --bench:#E8C35A;
+  --bar-bg:#070B10; --bar-fg:#E5EAF0; --bar-line:rgba(229,234,240,.3);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E141B; --surface:#161F29; --sunk:#1D2833; --ink:#E5EAF0; --muted:#94A1B1; --line:#2A3644;
+  --blue:#7EA6EE; --blue-soft:#1C2B42; --on-blue:#0E141B;
+  --yellow:#F2B200; --on-yellow:#1A1300;
+  --up:#3DCB82; --down:#F2695E; --up-soft:#16342A; --down-soft:#3D1F1E;
+  --chart-line:#7EA6EE; --chart-top:rgba(126,166,238,.25); --chart-bottom:rgba(126,166,238,0); --chart-grid:rgba(229,234,240,.06);
+  --vol-up:rgba(61,203,130,.35); --vol-down:rgba(242,105,94,.35); --bench:#E8C35A;
+  --bar-bg:#070B10; --bar-fg:#E5EAF0; --bar-line:rgba(229,234,240,.3);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bar-bg)}
+a{color:var(--blue)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--muted)}
+
+/* shop bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bar-bg);color:var(--bar-fg)}
+.bar-in{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;font-family:var(--f-display);font-stretch:118%;font-weight:800;font-size:19px;letter-spacing:.02em;text-transform:uppercase}
+.brand-mark{display:grid;place-items:center;width:30px;height:30px;background:var(--yellow);color:var(--on-yellow);font-size:13px;font-stretch:90%;clip-path:polygon(0 0,100% 0,100% 72%,72% 100%,0 100%)}
+.clock{display:flex;align-items:center;gap:10px;margin-left:auto;font-family:var(--f-data);font-size:13px;min-width:0}
+.clock-state{font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:3px;background:var(--yellow);color:var(--on-yellow);white-space:nowrap}
+.clock-state[data-s="closed"],.clock-state[data-s="pre"]{background:transparent;color:var(--yellow);box-shadow:inset 0 0 0 1px var(--yellow)}
+.bar .ghost{background:transparent;border:1px solid var(--bar-line);color:var(--bar-fg);border-radius:4px;padding:5px 10px;font-size:13px;cursor:pointer}
+.bar .ghost:hover{border-color:var(--yellow)}
+
+.sample{padding-block:8px;font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.sample strong.live{color:var(--up)}
+.sec-h{font-size:20px;font-stretch:108%;margin:4px 0 8px}
+.sec-h a{color:inherit;text-decoration:none}
+.sample strong{font-family:var(--f-display);font-stretch:85%;letter-spacing:.06em;text-transform:uppercase;font-size:11px;color:var(--down);border:1px solid currentColor;border-radius:3px;padding:1px 6px}
+
+/* settings */
+.settings{padding-block:4px 12px}
+.settings-card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.settings h3{margin:0 0 6px;font-family:var(--f-display);font-stretch:90%;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.settings label{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:14px}
+.settings .hint{font-size:13px;color:var(--muted);margin:4px 0 0}
+.settings input[type=number]{width:70px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)}
+.settings input[type=range]{width:100%}
+
+/* trade selector */
+.trades{display:flex;flex-wrap:wrap;gap:8px;padding-block:6px 18px}
+.trade-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:8px 12px;cursor:pointer;text-decoration:none;color:var(--ink);font-family:var(--f-display);font-stretch:92%;font-weight:600;font-size:14px}
+.trade-btn:hover{border-color:var(--blue)}
+.trade-btn[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.trade-btn .count{font-family:var(--f-data);font-size:11px;color:var(--muted);font-weight:400}
+.trade-btn[aria-current="page"] .count{color:var(--yellow)}
+
+/* headings */
+h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0}
+.view-head{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.view-head h1{font-size:clamp(28px,4.4vw,40px);font-stretch:112%;font-weight:800;line-height:1.05;letter-spacing:-.01em}
+.view-head p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.eyebrow{font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.bench{display:flex;gap:8px;flex-wrap:wrap}
+.bench-chip{display:flex;flex-direction:column;gap:1px;padding:7px 12px;border-radius:5px;background:var(--surface);border:1px solid var(--line);min-width:120px}
+.bench-chip .t{font-family:var(--f-display);font-weight:700;font-size:13px}
+.bench-chip .t span{font-weight:400;color:var(--muted);font-family:var(--f-body);font-size:12px}
+.bench-chip .v{font-family:var(--f-data);font-size:13px}
+.tally{font-size:13px;color:var(--muted);margin:0 0 10px}
+
+/* board */
+.board-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:28px}
+table.board{width:100%;border-collapse:collapse;font-size:14px}
+.board th{font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.board th:first-child,.board td:first-child{text-align:left}
+.board td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle;white-space:nowrap}
+.board tr:last-child td{border-bottom:0}
+.board tbody tr{cursor:pointer}
+.board tbody tr:hover{background:var(--sunk)}
+.board .tkcell{display:flex;flex-direction:column;gap:2px}
+.board .tkcell a{font-family:var(--f-display);font-weight:800;font-size:16px;text-decoration:none;color:var(--ink);letter-spacing:.01em}
+.board .tkcell .co{font-size:13px;color:var(--muted);white-space:normal;min-width:150px}
+.role{display:inline-block;font-family:var(--f-display);font-stretch:85%;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:1px 6px;border-radius:3px;background:var(--blue-soft);color:var(--blue);margin-left:6px;vertical-align:2px}
+.role.also{background:transparent;box-shadow:inset 0 0 0 1px var(--line);color:var(--muted)}
+.pill{display:inline-block;min-width:64px;padding:2px 7px;border-radius:3px;font-family:var(--f-data);font-size:13px;text-align:right}
+.pill.up{background:var(--up-soft)} .pill.down{background:var(--down-soft)} .pill.flat{background:var(--sunk)}
+.spark{display:block;margin-left:auto}
+@media (max-width:700px){.board .hide-sm{display:none}}
+
+/* stock sheet */
+.back{display:inline-flex;gap:6px;align-items:center;font-size:14px;text-decoration:none;margin-bottom:10px}
+.quote-head{display:grid;grid-template-columns:1fr auto;gap:12px 32px;align-items:end;margin-bottom:14px}
+@media (max-width:700px){.quote-head{grid-template-columns:1fr}}
+.tk-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tk{font-size:clamp(38px,7vw,60px);font-stretch:118%;font-weight:800;line-height:.95;letter-spacing:-.01em}
+.tag{font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:3px;border:1px solid var(--line);color:var(--muted)}
+.co-name{font-size:18px;font-weight:600;margin-top:6px}
+.what{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.px-block{text-align:right}
+@media (max-width:700px){.px-block{text-align:left}}
+.px{font-family:var(--f-data);font-size:clamp(34px,5.5vw,46px);font-weight:500;line-height:1}
+.chg{font-family:var(--f-data);font-size:17px;margin-top:4px}
+.asof{font-size:12.5px;color:var(--muted);margin-top:4px}
+
+.bidask{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:14px}
+.bidask>div{padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.bidask>div+div{border-left:1px solid var(--line)}
+.bidask .k{font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.bidask .v{font-family:var(--f-data);font-size:17px}
+.bidask .v small{font-size:12px;color:var(--muted)}
+
+.chart-card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px 12px;margin-bottom:18px}
+.chart-tools{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-bottom:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:5px 10px;font-family:var(--f-data);font-size:12.5px;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button:disabled{opacity:.4;cursor:default}
+.toggle{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+#chart{height:340px;position:relative}
+@media (max-width:700px){#chart{height:260px}}
+.chart-note{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px;pointer-events:none;text-align:center;padding:16px;z-index:3}
+
+.sheet-tools{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:0 0 10px}
+.sheet-tools h2{font-size:22px;font-stretch:110%;font-weight:800}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:7px 12px;cursor:pointer;font-size:14px}
+.btn[aria-pressed="true"]{background:var(--yellow);color:var(--on-yellow);border-color:var(--yellow)}
+
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start;margin-bottom:18px}
+@media (max-width:420px){.groups{grid-template-columns:1fr}}
+.group{background:var(--surface);border:1px solid var(--line);border-radius:6px;min-width:0}
+.group-h{padding:10px 14px 8px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.group-h h3{margin:0;font-family:var(--f-display);font-stretch:95%;font-weight:800;font-size:15px;letter-spacing:.01em}
+.group-h .gn{font-family:var(--f-data);font-size:11px;color:var(--muted)}
+.stat{border-bottom:1px solid var(--line)}
+.stat:last-child{border-bottom:0}
+.stat-row{display:grid;grid-template-columns:minmax(0,1fr) auto 18px;gap:10px;align-items:center;width:100%;padding:9px 14px;background:transparent;border:0;text-align:left;cursor:pointer}
+.stat-row:hover{background:var(--sunk)}
+.stat-row .lab{font-size:14px}
+.stat-row .val{font-family:var(--f-data);font-size:14.5px;text-align:right;white-space:nowrap}
+.stat-row .chev{color:var(--muted);transition:transform .15s}
+.stat[data-open="true"] .chev{transform:rotate(90deg)}
+.stat-body{padding:2px 14px 12px;font-size:13.5px}
+.stat-body p{margin:4px 0}
+.math{font-family:var(--f-data);font-size:13px;background:var(--sunk);border-radius:4px;padding:6px 8px;margin:6px 0;overflow-x:auto;white-space:nowrap}
+.where{color:var(--muted);font-size:12.5px}
+.where b{color:var(--ink);font-weight:600}
+.blank{font-family:var(--f-data);font-size:13px;border:1px dashed var(--muted);background:transparent;border-radius:4px;padding:1px 10px;color:var(--muted);cursor:pointer}
+
+.tape{position:relative;margin:8px 0 2px;height:30px}
+.tape-bar{position:absolute;left:0;right:0;top:12px;height:12px;border-radius:2px;background:
+  repeating-linear-gradient(90deg,var(--on-yellow) 0 1px,transparent 1px 10%),var(--yellow);opacity:.9}
+.tape-mark{position:absolute;top:0;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid var(--ink);transform:translateX(-7px)}
+.tape-ends{display:flex;justify-content:space-between;font-family:var(--f-data);font-size:12px;color:var(--muted)}
+
+.hook{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start;background:var(--bar-bg);color:var(--bar-fg);border-radius:6px;padding:16px 18px;margin-bottom:28px}
+.hook .eyebrow{color:var(--yellow)}
+.hook p{margin:2px 0 0;font-size:16px;max-width:65ch}
+.hook-mark{font-family:var(--f-display);font-weight:800;font-size:34px;line-height:1;color:var(--yellow)}
+
+footer{padding-block:20px 32px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);margin-top:10px}
+footer p{margin:4px 0;max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<header class="bar">
+  <div class="wrap bar-in">
+    <a class="brand" href="#all"><span class="brand-mark">TF</span><span>Trade Floor</span></a>
+    <div class="clock" aria-live="polite"><span class="clock-state" id="clockState" data-s="open">Open</span><span id="clockText">Loading…</span></div>
+    <button class="ghost" id="settingsBtn" aria-expanded="false" aria-controls="settings">Replay settings</button>
+  </div>
+</header>
+
+<div class="wrap sample" id="source"><strong>Loading</strong><span>Looking for the latest data…</span></div>
+
+<section class="wrap settings" id="settings" hidden>
+  <div class="settings-card">
+    <div>
+      <h3>What students see</h3>
+      <label><input type="radio" name="mode" id="modeReplay" value="replay"> <span>Replay: yesterday's market, running behind real time</span></label>
+      <label><input type="radio" name="mode" id="modeSnap" value="snapshot"> <span>Snapshot: yesterday's closing numbers</span></label>
+    </div>
+    <div>
+      <h3>Replay delay</h3>
+      <label><input type="number" id="lagHours" min="1" max="47" step="1"> <span>hours behind</span></label>
+      <p class="hint">At 22 hours, a 7:45 AM class sees 9:45 AM from the previous trading day. Weekends roll back to Friday. Holidays aren't handled yet.</p>
+    </div>
+    <div>
+      <h3>Teacher scrub</h3>
+      <label><input type="checkbox" id="scrubOn"> <span>Pick the replay time by hand</span></label>
+      <input type="range" id="scrubRange" min="-1" max="390" step="1" aria-label="Replay time">
+      <p class="hint" id="scrubLabel">–</p>
+    </div>
+  </div>
+</section>
+
+<nav class="wrap trades" id="trades" aria-label="Trades"></nav>
+<main class="wrap" id="view"></main>
+
+<footer class="wrap">
+  <p>For classroom learning only. Nothing here is investment advice.</p>
+  <p>Charts use <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a> Lightweight Charts™, Copyright © TradingView, Inc.</p>
+</footer>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+"use strict";
+/* ---------- course data (from Trade_Stock_List.xlsx, Status = Include) ---------- */
+let CATS=[
+ ["law-enforcement","Law Enforcement","Gear, radios and vehicles behind policing.","SPY"],
+ ["cosmetology","Cosmetology","Product makers, supply stores and salon chains.","XLP"],
+ ["hvac","HVAC","Equipment makers, the distributor techs buy from, and a contractor that hires.","XLI"],
+ ["p-tech-it","P-Tech / IT","Software, networking, chips and cybersecurity.","XLK"],
+ ["engineering-manufacturing","Engineering / Manufacturing","Heavy equipment, automation, welding and industrial supply.","XLI"],
+ ["carpentry","Carpentry","Lumber, tools, home-improvement retail and building products.","XHB"],
+ ["auto-tech-autobody","Auto-Tech / AutoBody","Automakers, tools, parts and refinish paint.","XLY"],
+ ["electrical","Electrical","Power equipment, wiring, generators and grid work.","XLI"]
+].map(([slug,name,desc,etf])=>({slug,name,desc,etf}));
+let ETF_NAMES={SPY:"S&P 500",XLP:"Consumer Staples",XLI:"Industrials",XLK:"Technology",XHB:"Homebuilders",XLY:"Consumer Discretionary"};
+const ROLE_ORDER=["Giant","Tools/Supplies","Distributor","Employer","Wildcard"];
+
+// ticker: [company, category, alsoIn, role, exchange, what they do, student hook]
+let META={
+ AXON:["Axon Enterprise","law-enforcement",[],"Tools/Supplies","Nasdaq","Tasers, body cameras and Evidence.com digital-evidence software.","Body cams went from rare to standard. How did that show up in Axon's revenue and stock?"],
+ MSI:["Motorola Solutions","law-enforcement",[],"Tools/Supplies","NYSE","Police and fire radios, 911 dispatch and command-center software.","Who pays for the radio on every officer's belt, and how often does it get replaced?"],
+ FSS:["Federal Signal","law-enforcement",[],"Tools/Supplies","NYSE","Emergency light bars and sirens; also street sweepers and vacuum trucks.","A smaller company that's on almost every cruiser. Do smaller stocks move more day to day?"],
+ SWBI:["Smith & Wesson Brands","law-enforcement",[],"Tools/Supplies","Nasdaq","Handguns and rifles for law enforcement and civilian buyers.","Watch how this stock reacts to news headlines and elections."],
+ PG:["Procter & Gamble","cosmetology",[],"Giant","NYSE","Pantene, Head & Shoulders, Olay and many household brands; a classic steady dividend stock.","Compare PG's daily moves to e.l.f.'s. Why is one so much calmer?"],
+ EL:["Estée Lauder","cosmetology",[],"Tools/Supplies","NYSE","MAC, Clinique, Aveda; Aveda also runs cosmetology schools.","Pull up EL's 5-year chart. What story does it tell?"],
+ SBH:["Sally Beauty Holdings","cosmetology",[],"Distributor","NYSE","Sally Beauty stores plus CosmoProf, the supplier for licensed professionals.","Once you're licensed, where will you buy your supplies?"],
+ ULTA:["Ulta Beauty","cosmetology",[],"Employer","Nasdaq","Beauty retailer with in-store salons that hire licensed stylists.","Retail plus salon services: which part of the business matters more?"],
+ ELF:["e.l.f. Beauty","cosmetology",[],"Wildcard","NYSE","Low-price cosmetics popular with teens; a volatile, fast-moving stock.","Can a social-media trend show up in a stock price?"],
+ CARR:["Carrier Global","hvac",[],"Giant","NYSE","Residential and commercial heating and cooling; Willis Carrier invented modern air conditioning.","AC was invented in 1902. Is this company still growing?"],
+ TT:["Trane Technologies","hvac",[],"Tools/Supplies","NYSE","Commercial and residential HVAC systems.","Trane vs. Carrier: same industry, different charts?"],
+ LII:["Lennox International","hvac",[],"Tools/Supplies","NYSE","Residential furnaces, AC and heat pumps sold directly to contractors.","Does a hot summer or a cold winter show up in Lennox's results?"],
+ WSO:["Watsco","hvac",[],"Distributor","NYSE","Largest HVAC/R equipment distributor in North America.","Where does a tech actually pick up the unit before an install?"],
+ FIX:["Comfort Systems USA","hvac",["electrical"],"Employer","NYSE","Mechanical and electrical contractor; data-center projects have driven big growth.","Data centers need huge amounts of cooling. Who does the install work?"],
+ MSFT:["Microsoft","p-tech-it",[],"Giant","Nasdaq","Windows, Office, Azure cloud and widely used IT certifications.","Which Microsoft products did you use today?"],
+ CSCO:["Cisco Systems","p-tech-it",[],"Tools/Supplies","Nasdaq","Networking hardware and the CCNA certification.","Most networks you've used run through Cisco gear. Is it a growth stock or a steady one?"],
+ NVDA:["Nvidia","p-tech-it",[],"Tools/Supplies","Nasdaq","Graphics and AI chips used in data centers and gaming.","Look at NVDA's 5-year chart. What changed?"],
+ IBM:["IBM","p-tech-it",[],"Employer","NYSE","Hybrid cloud, AI and mainframes; IBM helped create the P-TECH school model.","The company behind P-TECH: what does it actually sell today?"],
+ CRWD:["CrowdStrike","p-tech-it",[],"Wildcard","Nasdaq","Cybersecurity software protecting company computers and networks.","Look up July 2024. What did one bad software update do to the stock?"],
+ CAT:["Caterpillar","engineering-manufacturing",[],"Giant","NYSE","Heavy construction and mining equipment, engines and generators.","CAT is often called an economic bellwether. Why?"],
+ ROK:["Rockwell Automation","engineering-manufacturing",[],"Tools/Supplies","NYSE","Factory automation and Allen-Bradley PLCs.","Ever programmed an Allen-Bradley PLC? That's Rockwell."],
+ LECO:["Lincoln Electric","engineering-manufacturing",[],"Tools/Supplies","Nasdaq","Welding machines, wire and consumables.","What brand is the welder in your shop?"],
+ FAST:["Fastenal","engineering-manufacturing",[],"Distributor","Nasdaq","Industrial and construction supplies, including on-site vending machines at factories.","How does a company that sells nuts and bolts become a big stock?"],
+ DE:["Deere & Co.","engineering-manufacturing",[],"Employer","NYSE","Agricultural and construction machinery; a major U.S. manufacturing employer.","How might crop prices affect tractor sales?"],
+ HD:["Home Depot","carpentry",["electrical","hvac"],"Giant","NYSE","Largest home-improvement retailer, with a big pro-contractor business.","Does a housing slowdown show up in HD's chart?"],
+ LOW:["Lowe's","carpentry",[],"Distributor","NYSE","Second-largest home-improvement retailer.","Head-to-head: HD vs. LOW over 1 year and 5 years."],
+ WY:["Weyerhaeuser","carpentry",[],"Tools/Supplies","NYSE","Timberland owner and lumber/wood-products maker.","Track lumber prices next to WY's stock. Do they move together?"],
+ SWK:["Stanley Black & Decker","carpentry",[],"Tools/Supplies","NYSE","DeWalt, Craftsman and Stanley tools.","What brand is your drill?"],
+ TREX:["Trex Company","carpentry",[],"Wildcard","NYSE","Composite decking made from recycled materials.","Decks are a summer project. Is there a seasonal pattern?"],
+ F:["Ford Motor","auto-tech-autobody",["law-enforcement"],"Giant","NYSE","Trucks, cars and EVs; builds the Police Interceptor Utility.","F-150 vs. EVs: where is Ford's money coming from?"],
+ TSLA:["Tesla","auto-tech-autobody",[],"Wildcard","Nasdaq","Electric vehicles, batteries and charging; EVs need different service skills.","Gas vs. EV: compare F and TSLA over 5 years."],
+ SNA:["Snap-on","auto-tech-autobody",[],"Tools/Supplies","NYSE","The tool truck: hand tools, diagnostic scanners and tool financing.","Snap-on also lends money to techs for tools. How does that affect the business?"],
+ ORLY:["O'Reilly Automotive","auto-tech-autobody",[],"Distributor","Nasdaq","Auto-parts stores serving DIY customers and professional shops.","More older cars on the road means more repairs. Good for O'Reilly?"],
+ PPG:["PPG Industries","auto-tech-autobody",[],"Tools/Supplies","NYSE","Paints and coatings, including automotive refinish paint for body shops.","Body-shop paint is only part of PPG. What else do they make?"],
+ ETN:["Eaton","electrical",[],"Giant","NYSE","Breakers, panels and power distribution; strong data-center demand.","Whose name is on the breaker panel at your house?"],
+ HUBB:["Hubbell","electrical",[],"Tools/Supplies","NYSE","Wiring devices, connectors and utility equipment.","Look at the receptacles in this room. Who made them?"],
+ GWW:["W.W. Grainger","electrical",[],"Distributor","NYSE","Industrial and electrical supply distributor.","Why do contractors buy from a distributor instead of the manufacturer?"],
+ PWR:["Quanta Services","electrical",[],"Employer","NYSE","Largest employer of utility lineworkers; power-grid construction.","More data centers and EVs need more grid. Who builds it?"],
+ GNRC:["Generac","electrical",[],"Wildcard","NYSE","Home standby generators, often installed by electricians.","Check GNRC's chart after a major hurricane or ice storm."]
+};
+/* Built-in SAMPLE generator inputs, used only when data/summary.json is missing (made up): [price level, shares (billions), P/E (negative = losing money), P/B (negative = negative book value), dividend yield %, beta, avg volume (millions)] */
+const PARAMS={
+ AXON:[600,.078,150,20,0,1.1,.8], MSI:[430,.167,35,30,1.0,.95,.9], FSS:[110,.061,30,5.5,.5,1.1,.5], SWBI:[10,.044,40,1.2,5.2,.6,.6],
+ PG:[150,2.34,23,7,2.8,.4,7], EL:[90,.36,45,8,1.5,1.1,3], SBH:[15,.1,8,2.3,0,1.4,2], ULTA:[550,.045,21,9,0,1.0,1], ELF:[90,.057,50,6,0,1.6,3],
+ CARR:[60,.86,18,3.8,1.5,1.2,5], TT:[420,.222,33,12,.9,1.1,1.2], LII:[560,.035,24,25,.9,1.0,.5], WSO:[400,.04,30,6.5,3,.9,.5], FIX:[900,.035,40,14,.2,1.2,.5],
+ MSFT:[500,7.43,36,11,.7,.9,20], CSCO:[70,3.95,27,5.8,2.3,.85,20], NVDA:[180,24.3,50,40,.02,1.7,180], IBM:[280,.93,45,9,2.4,.7,4], CRWD:[450,.25,-400,30,0,1.3,3],
+ CAT:[500,.47,25,13,1.2,1.1,2.5], ROK:[350,.113,40,10,1.5,1.2,.9], LECO:[240,.055,26,9,1.3,1.0,.4], FAST:[45,1.15,42,13,1.9,.9,6], DE:[480,.27,25,5,1.3,.9,1.5],
+ HD:[380,.995,26,60,2.4,1.0,3.5], LOW:[240,.56,20,-20,1.9,1.0,2.5], WY:[26,.72,60,2,3.1,1.1,4], SWK:[75,.155,30,1.2,4.3,1.3,1.5], TREX:[50,.107,25,6.5,0,1.6,1.5],
+ F:[12,3.9,10,1,5,1.3,60], TSLA:[400,3.22,180,17,0,2.1,90], SNA:[340,.052,18,3.5,2.6,.8,.3], ORLY:[95,.85,33,-60,0,.8,5], PPG:[105,.225,19,3.5,2.6,1.1,2],
+ ETN:[360,.39,36,7,1.2,1.2,2.5], HUBB:[420,.053,28,6.5,1.3,1.0,.5], GWW:[1000,.048,26,13,.9,.9,.25], PWR:[400,.149,60,7.5,.1,1.1,1.5], GNRC:[160,.059,30,3.6,0,1.5,1.2],
+ SPY:[680,0,0,0,1.2,1,70], XLP:[80,0,0,0,2.6,.6,10], XLI:[150,0,0,0,1.4,1.05,9], XLK:[280,0,0,0,.6,1.2,6], XHB:[105,0,0,0,.7,1.3,2], XLY:[230,0,0,0,.8,1.2,4]
+};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const f2=n=>n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const sgn=n=>(n>0?"+":n<0?"−":"")+f2(Math.abs(n));
+const pct=n=>(n>0?"+":n<0?"−":"")+Math.abs(n*100).toFixed(2)+"%";
+const dir=n=>n>0.00001?"up":n<-0.00001?"down":"flat";
+const arrow=n=>n>0.00001?"▲":n<-0.00001?"▼":"■";
+function big(n){const a=Math.abs(n),s=n<0?"−":"";if(a>=1e12)return s+(a/1e12).toFixed(2)+"T";if(a>=1e9)return s+(a/1e9).toFixed(2)+"B";if(a>=1e6)return s+(a/1e6).toFixed(2)+"M";if(a>=1e3)return s+(a/1e3).toFixed(1)+"K";return s+Math.round(a)}
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+const isoUTC=d=>d.toISOString().slice(0,10);
+function tradingDays(endKey,n){const d=new Date(endKey+"T00:00:00Z"),out=[];while(out.length<n){const w=d.getUTCDay();if(w&&w!==6)out.push(isoUTC(d));d.setUTCDate(d.getUTCDate()-1)}return out.reverse()}
+function ts(key,min){const[y,m,d]=key.split("-").map(Number);return Date.UTC(y,m-1,d,Math.floor(min/60),min%60)/1000}
+function minLabel(m){const h=Math.floor(m/60),mm=m%60;return((h+11)%12+1)+":"+String(mm).padStart(2,"0")+(h<12?" AM":" PM")}
+function agg(bars,time){let o=bars[0].o,h=-Infinity,l=Infinity,c=0,v=0;for(const b of bars){if(b.h>h)h=b.h;if(b.l<l)l=b.l;c=b.c;v+=b.v}return{time,open:o,high:h,low:l,close:c,volume:v}}
+
+/* ---------- data source ---------- */
+// "builtin": made-up data generated in the page (preview); "demo": data/summary.json from the script's --demo mode; "live": real nightly data
+const SRC={kind:"builtin",replayDay:null,L:390,generated:null,feed:null,benchmark:"SPY"};
+const round2=n=>Math.round(n*100)/100;
+
+/* ---------- settings ---------- */
+const SETTINGS={mode:"replay",lag:22,scrub:false,scrubVal:45};
+try{Object.assign(SETTINGS,JSON.parse(localStorage.getItem("tf-settings")||"{}"))}catch(e){}
+function saveSettings(){try{localStorage.setItem("tf-settings",JSON.stringify(SETTINGS))}catch(e){}}
+
+/* ---------- replay clock ---------- */
+function nowET(){
+  const p={};for(const x of new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).formatToParts(new Date()))p[x.type]=x.value;
+  return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
+}
+function replayInfo(){
+  const L=SRC.L||390,et=nowET(),lagged=new Date(et-SETTINGS.lag*3600e3);
+  let key;
+  if(SRC.replayDay)key=SRC.replayDay; // real data always replays the latest trading day it has
+  else{
+    const r=SETTINGS.mode==="snapshot"?new Date(et):lagged;
+    if(SETTINGS.mode==="snapshot")do{r.setUTCDate(r.getUTCDate()-1)}while(r.getUTCDay()===0||r.getUTCDay()===6);
+    else while(r.getUTCDay()===0||r.getUTCDay()===6)r.setUTCDate(r.getUTCDate()-1);
+    key=isoUTC(r);
+  }
+  let state,idx;
+  if(SETTINGS.mode==="snapshot"){state="snapshot";idx=L}
+  else{
+    const tod=SETTINGS.scrub?570+Number(SETTINGS.scrubVal):lagged.getUTCHours()*60+lagged.getUTCMinutes();
+    if(tod<570){state="pre";idx=-1}else if(tod>=570+L){state="closed";idx=L}else{state="open";idx=tod-570}
+  }
+  const dayLabel=new Date(key+"T12:00:00Z").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"});
+  const closeLabel=L===390?"4:00 PM close":minLabel(570+L)+" close (early close)";
+  const timeLabel=state==="pre"?"before 9:30 AM":state==="open"?minLabel(570+idx):closeLabel;
+  return{key,idx,state,dayLabel,timeLabel,L};
+}
+
+/* ---------- built-in sample generator (used only when no data files are found) ---------- */
+let DATA={},DATA_KEY="";
+function gen(tk,key){
+  const[P0,shB,pe,pb,yld,beta,avgM]=PARAMS[tk];const r=rng(hash(tk));
+  const sig=0.006+0.008*beta,avgV=avgM*1e6,N=1265,days=tradingDays(key,N),daily=new Array(N);
+  const startOpen=P0*(0.95+0.1*r());let prevC=startOpen;const intr=[];
+  for(let k=0;k<5;k++){
+    const di=N-5+k,o=k===0?startOpen:prevC*(1+gauss(r)*sig*0.35),drift=gauss(r)*sig*0.5/390,sm=sig*0.9/Math.sqrt(390),vs=avgV*(0.65+0.7*r());
+    const w=[];let ws=0;for(let t=0;t<390;t++){const x=(1+2.4*Math.exp(-t/22)+1.8*Math.exp(-(389-t)/18))*(0.6+0.8*r());w.push(x);ws+=x}
+    const bars=[];let last=o;
+    for(let t=0;t<390;t++){const c=last*(1+drift+sm*gauss(r)),h=Math.max(last,c)*(1+Math.abs(gauss(r))*sm*0.6),l=Math.min(last,c)*(1-Math.abs(gauss(r))*sm*0.6);bars.push({o:last,h,l,c,v:Math.round(vs*w[t]/ws)});last=c}
+    intr.push(bars);prevC=last;daily[di]=agg(bars,days[di]);
+  }
+  let nextOpen=startOpen;const hs=sig*0.75;
+  for(let i=N-6;i>=0;i--){const c=nextOpen/(1+gauss(r)*hs*0.3),ret=0.0003+gauss(r)*hs,o=c/(1+ret);daily[i]={time:days[i],open:o,high:Math.max(o,c)*(1+Math.abs(gauss(r))*hs*0.5),low:Math.min(o,c)*(1-Math.abs(gauss(r))*hs*0.5),close:c,volume:Math.round(avgV*(0.6+0.8*r())*Math.exp(gauss(r)*0.25))};nextOpen=o}
+  const fiveMin=[];for(let k=0;k<4;k++){const b=intr[k],dk=days[N-5+k];for(let t=0;t<390;t+=5)fiveMin.push(agg(b.slice(t,t+5),ts(dk,570+t)))}
+  let wkLo=Infinity,wkHi=-Infinity;for(let i=N-252;i<=N-2;i++){wkLo=Math.min(wkLo,daily[i].low);wkHi=Math.max(wkHi,daily[i].high)}
+  let av=0;for(let i=N-64;i<=N-2;i++)av+=daily[i].volume;
+  const isEtf=!shB;
+  return{today:intr[4],prev:daily[N-2].close,wkLo,wkHi,avgVol:av/63,isEtf,
+    shares:isEtf?null:shB*1e9,eps:isEtf?null:P0/pe,bvps:isEtf?null:P0/pb,div:P0*yld/100,beta,
+    target:isEtf?null:P0*(1.0+0.18*r()),targetAsof:null,quotes:null,
+    liq:avgM>10?0.00012:avgM>2?0.0004:0.0011,hist:{daily:daily.slice(0,N-1),fiveMin}};
+}
+function ensureData(key){if(SRC.kind!=="builtin"||key===DATA_KEY)return;DATA={};for(const tk in PARAMS)DATA[tk]=gen(tk,key);DATA_KEY=key}
+
+/* ---------- data files from the nightly script ---------- */
+async function loadSummary(){
+  try{const r=await fetch("data/summary.json",{cache:"no-store"});if(!r.ok)return false;adopt(await r.json());return true}catch(e){return false}
+}
+function adopt(s){
+  SRC.kind=s.demo?"demo":"live";SRC.replayDay=s.replay_day;SRC.L=s.session_len||390;SRC.generated=s.generated;SRC.feed=s.feed;SRC.benchmark=s.benchmark||"SPY";
+  CATS=s.categories;META={};
+  for(const tk in s.stocks){const m=s.stocks[tk];META[tk]=[m.company,m.category,m.also_in||[],m.role,m.exchange,m.what,m.hook]}
+  ETF_NAMES={};for(const e in s.etfs)ETF_NAMES[e]=s.etfs[e].name;
+  DATA={};
+  for(const sym in s.symbols){const x=s.symbols[sym];
+    DATA[sym]={today:x.today.map(a=>({o:a[0],h:a[1],l:a[2],c:a[3],v:a[4]})),prev:x.prev,wkLo:x.wk_lo,wkHi:x.wk_hi,avgVol:x.avg_vol,
+      isEtf:!s.stocks[sym],shares:x.shares??null,eps:x.eps??null,bvps:x.bvps??null,div:x.div||0,beta:x.beta??null,
+      target:x.target??null,targetAsof:x.target_asof??null,epsAsof:x.eps_asof??null,bookAsof:x.book_asof??null,
+      quotes:x.quotes||null,liq:0.0004,hist:null}}
+  DATA_KEY=s.replay_day;
+  catBySlug=Object.fromEntries(CATS.map(c=>[c.slug,c]));
+}
+const HIST_PENDING={};
+function loadHist(sym){
+  const d=DATA[sym];if(!d)return Promise.reject(new Error("unknown symbol"));if(d.hist)return Promise.resolve(d.hist);
+  if(HIST_PENDING[sym])return HIST_PENDING[sym];
+  return HIST_PENDING[sym]=fetch(`data/history/${sym}.json`).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}).then(h=>{
+    d.hist={daily:h.daily.map(a=>({time:a[0],open:a[1],high:a[2],low:a[3],close:a[4],volume:a[5]})),
+      fiveMin:[].concat(...h.fivemin.map(day=>day.bars.map((b,i)=>({time:ts(day.date,570+i*5),open:b[0],high:b[1],low:b[2],close:b[3],volume:b[4]}))))};
+    return d.hist}).catch(e=>{delete HIST_PENDING[sym];throw e});
+}
+
+function quote(tk,info){
+  const d=DATA[tk],L=d.today.length,idx=info.idx,prev=round2(d.prev);
+  let price,open=null,lo=null,hi=null,vol=0;
+  if(idx<0){price=prev}else{const n=Math.min(idx+1,L);open=d.today[0].o;hi=-Infinity;lo=Infinity;for(let i=0;i<n;i++){const b=d.today[i];if(b.h>hi)hi=b.h;if(b.l<lo)lo=b.l;vol+=b.v}price=d.today[n-1].c}
+  price=round2(price);
+  const chg=round2(price-prev),chgPct=chg/prev;
+  let bid=null,ask=null,bidSize=null,askSize=null;
+  if(d.quotes&&d.quotes.length){
+    // real quotes are samples [minute, bid, bidSize, ask, askSize]; use the latest one at or before the replay time
+    const lim=info.state==="snapshot"?L-1:info.state==="closed"?L+60:idx;
+    let best=d.quotes[0];for(const qq of d.quotes)if(qq[0]<=lim)best=qq;
+    [,bid,bidSize,ask,askSize]=best;
+  } else if(!d.isEtf){
+    const rr=rng(hash(tk)^((Math.max(idx,0)+7)*7919));
+    let s=Math.max(0.01,price*d.liq)*(0.7+1.3*rr());
+    if(info.state==="pre"||info.state==="closed")s*=6;
+    s=Math.max(0.01,round2(s));
+    bid=round2(price-s/2);ask=round2(bid+s);bidSize=(1+Math.floor(rr()*12))*100;askSize=(1+Math.floor(rr()*12))*100;
+  }
+  const wkLo=lo===null?d.wkLo:Math.min(d.wkLo,lo),wkHi=hi===null?d.wkHi:Math.max(d.wkHi,hi);
+  return{tk,price,prev,chg,chgPct,open,lo,hi,vol,avgVol:d.avgVol,bid,ask,bidSize,askSize,spread:bid==null?null:round2(ask-bid),
+    wkLo,wkHi,shares:d.shares,mcap:d.shares?price*d.shares:null,eps:d.eps,pe:d.eps>0?price/d.eps:null,bvps:d.bvps,pb:d.bvps>0?price/d.bvps:null,
+    div:d.div,yield:d.div/price,beta:d.beta,target:d.target,targetAsof:d.targetAsof,epsAsof:d.epsAsof,bookAsof:d.bookAsof};
+}
+
+/* ---------- routing ---------- */
+let catBySlug=Object.fromEntries(CATS.map(c=>[c.slug,c]));
+function membersOf(slug){
+  const out=[];for(const tk in META){const m=META[tk];if(m[1]===slug)out.push({tk,also:false});else if(m[2].includes(slug))out.push({tk,also:true})}
+  out.sort((a,b)=>(a.also-b.also)||ROLE_ORDER.indexOf(META[a.tk][3])-ROLE_ORDER.indexOf(META[b.tk][3]));return out;
+}
+function route(){
+  const h=location.hash.slice(1);
+  if(h.startsWith("stock-")){const tk=h.slice(6).toUpperCase();if(META[tk]&&DATA[tk])return{view:"stock",tk}}
+  if(h.startsWith("trade-")&&catBySlug[h.slice(6)])return{view:"trade",slug:h.slice(6)};
+  return{view:"all"};
+}
+let R={view:"all"},INFO=null,LASTSIG="";
+
+function renderTrades(){
+  const cur=R.view==="trade"?R.slug:R.view==="stock"?META[R.tk][1]:"all";
+  $("#trades").innerHTML=`<a class="trade-btn" href="#all" ${cur==="all"?'aria-current="page"':""}>All trades <span class="count">${Object.keys(META).filter(t=>DATA[t]).length}</span></a>`+
+    CATS.map(c=>`<a class="trade-btn" href="#trade-${c.slug}" ${cur===c.slug?'aria-current="page"':""}>${esc(c.name)} <span class="count">${membersOf(c.slug).filter(x=>DATA[x.tk]).length}</span></a>`).join("");
+}
+function renderSource(){
+  const el=$("#source");
+  if(SRC.kind==="live"){
+    const up=new Date(SRC.generated).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"});
+    el.innerHTML=`<strong class="live">Real data</strong><span>Prices from Alpaca (${SRC.feed==="sip"?"all U.S. exchanges":"IEX exchange only"}) · company numbers from SEC filings · updated ${esc(up)} ET</span>`;
+  } else if(SRC.kind==="demo"){
+    el.innerHTML=`<strong>Sample data</strong><span>These numbers come from the update script's demo mode. Real figures appear after the first nightly run with your Alpaca keys.</span>`;
+  } else {
+    el.innerHTML=`<strong>Sample data</strong><span>Every price and number here is made up so the layout can be tested. Real figures arrive once the nightly data update is connected.</span>`;
+  }
+}
+
+/* ---------- clock ---------- */
+function renderClock(){
+  const s=$("#clockState");s.dataset.s=INFO.state;
+  s.textContent={pre:"Before open",open:"Market open",closed:"Closed",snapshot:"Closing snapshot"}[INFO.state];
+  $("#clockText").textContent=(INFO.state==="snapshot"?"Showing ":"Replaying ")+INFO.dayLabel+" · "+INFO.timeLabel+(INFO.state==="open"?" ET":"");
+  $("#scrubLabel").textContent=SETTINGS.scrub?"Replay time: "+(SETTINGS.scrubVal<0?"before the open":SETTINGS.scrubVal>=INFO.L?"after the close":minLabel(570+Number(SETTINGS.scrubVal))):"Off. The replay follows the real clock.";
+}
+
+/* ---------- board ---------- */
+function spark(tk,q){
+  const d=DATA[tk],L=d.today.length,W=96,H=28,n=INFO.idx<0?0:Math.min(INFO.idx+1,L);
+  const pts=[q.prev];for(let i=0;i<n;i+=3)pts.push(d.today[i].c);if(n)pts.push(d.today[n-1].c);
+  let lo=Math.min(...pts),hi=Math.max(...pts);if(hi-lo<1e-9){hi+=1;lo-=1}
+  const y=v=>(H-3-(v-lo)/(hi-lo)*(H-6)).toFixed(1),x=i=>(i/(L-1)*W).toFixed(1);
+  let path="";if(n){const step=[];for(let i=0;i<n;i+=3)step.push([i,d.today[i].c]);step.push([n-1,d.today[n-1].c]);path=step.map((p,j)=>(j?"L":"M")+x(p[0])+" "+y(p[1])).join("")}
+  const col=q.chg>0?"var(--up)":q.chg<0?"var(--down)":"var(--muted)";
+  return`<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><line x1="0" x2="${W}" y1="${y(q.prev)}" y2="${y(q.prev)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3" fill="none"/>${path?`<path d="${path}" fill="none" stroke="${col}" stroke-width="1.6"/>`:""}</svg>`;
+}
+function boardTable(list){
+  list=list.filter(x=>DATA[x.tk]);
+  return`<div class="board-wrap"><table class="board"><thead><tr><th>Stock</th><th>Price</th><th class="hide-sm">Change</th><th>% Change</th><th>Today</th><th class="hide-sm">Volume</th><th class="hide-sm">Market Cap</th></tr></thead><tbody>`+
+  list.map(({tk,also})=>{const m=META[tk],q=quote(tk,INFO),dd=dir(q.chg);
+    return`<tr data-tk="${tk}"><td><div class="tkcell"><span><a href="#stock-${tk.toLowerCase()}">${tk}</a>${also?`<span class="role also">Also in · ${esc(catBySlug[m[1]].name)}</span>`:`<span class="role">${esc(m[3])}</span>`}</span><span class="co">${esc(m[0])}</span></div></td>
+    <td class="num">${f2(q.price)}</td><td class="num hide-sm ${dd}">${sgn(q.chg)}</td><td><span class="pill ${dd}">${pct(q.chgPct)}</span></td>
+    <td>${spark(tk,q)}</td><td class="num hide-sm">${big(q.vol)}</td><td class="num hide-sm">${q.mcap?big(q.mcap):"–"}</td></tr>`}).join("")+`</tbody></table></div>`;
+}
+function benchChips(etfs){
+  return`<div class="bench">`+[...new Set(etfs)].filter(e=>DATA[e]).map(e=>{const q=quote(e,INFO);return`<div class="bench-chip"><span class="t">${e} <span>${esc(ETF_NAMES[e]||"")}</span></span><span class="v ${dir(q.chg)}">${f2(q.price)} ${arrow(q.chg)} ${pct(q.chgPct)}</span></div>`}).join("")+`</div>`;
+}
+function tallyLine(list){list=list.filter(x=>DATA[x.tk]);let u=0,dn=0;for(const{tk}of list){const c=quote(tk,INFO).chg;if(c>0)u++;else if(c<0)dn++}return`<p class="tally">${u} up · ${dn} down · ${list.length-u-dn} unchanged</p>`}
+function renderTrade(){
+  const c=catBySlug[R.slug],list=membersOf(R.slug);
+  $("#view").innerHTML=`<div class="view-head"><div><div class="eyebrow">Trade</div><h1>${esc(c.name)}</h1><p>${esc(c.desc)}</p></div>${benchChips([SRC.benchmark,c.etf])}</div>${tallyLine(list)}${boardTable(list)}`;
+}
+function renderAll(){
+  $("#view").innerHTML=`<div class="view-head"><div><div class="eyebrow">All trades</div><h1>The class watchlist</h1><p>Pick your trade above, or tap any stock to open its sheet.</p></div>${benchChips([SRC.benchmark])}</div>`+
+    CATS.map(c=>{const l=membersOf(c.slug).filter(x=>!x.also);return`<h2 class="sec-h"><a href="#trade-${c.slug}">${esc(c.name)}</a></h2>${boardTable(l)}`}).join("");
+}
+
+/* ---------- stock sheet ---------- */
+const UI={range:"1D",type:"area",vol:true,ma:false,cmp:false,quiz:false,open:new Set(),shown:new Set()};
+const tape=(lo,hi,v)=>{if(lo==null||hi==null)return"";const p=hi>lo?Math.min(1,Math.max(0,(v-lo)/(hi-lo))):.5;return`<div class="tape" aria-hidden="true"><div class="tape-bar"></div><div class="tape-mark" style="left:${(p*100).toFixed(1)}%"></div></div><div class="tape-ends"><span>${f2(lo)}</span><span>${f2(hi)}</span></div>`};
+const NA=`<span class="flat">N/A</span>`;
+const asOf=s=>s?new Date(s+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}):"";
+const GROUPS=[
+ {t:"Identity",items:[
+  {id:"ticker",l:"Ticker",v:q=>q.tk,def:"The short code that identifies a stock on an exchange. Type it into any finance site to find the company.",y:"At the top of the page, in parentheses after the company name."},
+  {id:"exch",l:"Exchange",v:q=>esc(META[q.tk][4]||"?"),def:"The marketplace where the stock is listed and traded. Most U.S. stocks trade on the NYSE or the Nasdaq.",y:"The small line under the company name, for example \"NYSE\" or \"NasdaqGS\"."}
+ ]},
+ {t:"Today's price",items:[
+  {id:"price",l:"Price",v:q=>f2(q.price),def:"The price of the most recent trade. During market hours it changes every time shares trade.",y:"The big number at the top of the page."},
+  {id:"prev",l:"Previous Close",v:q=>f2(q.prev),def:"The last price at the close on the trading day before this one. Today's change is measured from here.",y:"Summary tab, <b>Previous Close</b>."},
+  {id:"chg",l:"Price Change",v:q=>`<span class="${dir(q.chg)}">${sgn(q.chg)} (${pct(q.chgPct)})</span>`,def:"How far the price has moved since the previous close, in dollars and as a percent.",m:q=>`${f2(q.price)} − ${f2(q.prev)} = ${sgn(q.chg)}<br>${sgn(q.chg)} ÷ ${f2(q.prev)} = ${pct(q.chgPct)}`,y:"Next to the big price, in green or red."},
+  {id:"day",l:"Day's Range",v:q=>q.lo==null?"–":`${f2(q.lo)} – ${f2(q.hi)}`,def:"The lowest and highest prices traded so far today. The marker shows where the current price sits in that range.",x:q=>tape(q.lo,q.hi,q.price),y:"Summary tab, <b>Day's Range</b>."},
+  {id:"vol",l:"Volume",v:q=>q.vol.toLocaleString("en-US"),def:"How many shares have traded today. Compare it with the average: much higher than usual often means news.",m:q=>`Today ${big(q.vol)} vs. 3-month average ${big(q.avgVol)}`,y:"Summary tab, <b>Volume</b> and <b>Avg. Volume</b>."}
+ ]},
+ {t:"Buying & selling",items:[
+  {id:"bid",l:"Bid",v:q=>q.bid==null?NA:`${f2(q.bid)} × ${q.bidSize}`,def:"The highest price a buyer is offering right now. The number after the × is how many shares they want.",y:"Summary tab, <b>Bid</b>."},
+  {id:"ask",l:"Ask",v:q=>q.ask==null?NA:`${f2(q.ask)} × ${q.askSize}`,def:"The lowest price a seller will accept right now, and how many shares they're offering.",y:"Summary tab, <b>Ask</b>."},
+  {id:"spread",l:"Spread",v:q=>q.spread==null?NA:f2(q.spread),def:"The gap between the ask and the bid. Heavily traded stocks have tiny spreads. Small stocks, and any stock outside market hours, have wider ones.",m:q=>q.spread==null?null:`${f2(q.ask)} − ${f2(q.bid)} = ${f2(q.spread)}  (${(q.spread/q.price*100).toFixed(3)}% of the price)`,y:"Not listed. You calculate it from Bid and Ask."}
+ ]},
+ {t:"The bigger picture",items:[
+  {id:"wk52",l:"52-Week Range",v:q=>`${f2(q.wkLo)} – ${f2(q.wkHi)}`,def:"The lowest and highest prices over the past year. Shows whether today's price is near a high, a low, or in between.",x:q=>tape(q.wkLo,q.wkHi,q.price),y:"Summary tab, <b>52 Week Range</b>."},
+  {id:"beta",l:"Beta",v:q=>q.beta==null?NA:q.beta.toFixed(2),def:"How much the stock tends to move compared with the whole market (the S&P 500). 1.0 moves with the market, 2.0 moves about twice as much, 0.5 about half as much. Calculated from 5 years of monthly prices.",m:q=>q.beta==null?null:`If the market moves 1%, this stock tends to move about ${q.beta.toFixed(2)}%`,y:"Summary tab, <b>Beta (5Y Monthly)</b>."},
+  {id:"target",l:"1y Target Est",v:q=>q.target==null?`<span class="flat">Not entered</span>`:f2(q.target),def:"The average price that Wall Street analysts expect in one year. It's a forecast, and forecasts are often wrong.",m:q=>q.target==null?null:`(${f2(q.target)} − ${f2(q.price)}) ÷ ${f2(q.price)} = ${pct((q.target-q.price)/q.price)} expected move`+(q.targetAsof?`<br>Copied from Yahoo Finance on ${asOf(q.targetAsof)}`:""),y:"Summary tab, <b>1y Target Est</b>."}
+ ]},
+ {t:"What the company is worth",items:[
+  {id:"mcap",l:"Market Cap",v:q=>q.mcap==null?NA:"$"+big(q.mcap),def:"The total value of all the company's shares. It's how big the company is in the stock market's eyes.",m:q=>q.mcap==null?null:`${f2(q.price)} × ${big(q.shares)} shares = $${big(q.mcap)}`,y:"Summary tab, <b>Market Cap (intraday)</b>."},
+  {id:"eps",l:"EPS",v:q=>q.eps==null?NA:f2(q.eps),def:"Earnings per share: the company's profit over the last 12 months divided by its number of shares. Negative means the company lost money. TTM means trailing twelve months.",m:q=>q.eps==null?null:`Net income ÷ shares = ${f2(q.eps)} per share`+(q.epsAsof?`<br>12 months ending ${asOf(q.epsAsof)}, from SEC filings`:""),y:"Summary tab, <b>EPS (TTM)</b>."},
+  {id:"pe",l:"P/E Ratio",v:q=>q.pe==null?NA:q.pe.toFixed(2),def:"Price divided by EPS: how many dollars investors pay for $1 of yearly profit. High P/E usually means people expect fast growth. When EPS is negative there is no P/E.",m:q=>q.eps==null?null:q.pe==null?`EPS is ${f2(q.eps)} (a loss), so P/E isn't meaningful`:`${f2(q.price)} ÷ ${f2(q.eps)} = ${q.pe.toFixed(2)}`,y:"Summary tab, <b>PE Ratio (TTM)</b>."},
+  {id:"bvps",l:"Book Value / Share",v:q=>q.bvps==null?NA:f2(q.bvps),def:"What the company owns minus what it owes, divided by shares. Roughly what each share would be worth if the company sold everything and paid its debts. It can be negative. mrq means most recent quarter.",m:q=>q.bvps==null?null:`(Assets − Liabilities) ÷ shares = ${f2(q.bvps)}`+(q.bookAsof?`<br>Balance sheet dated ${asOf(q.bookAsof)}`:""),y:"Statistics tab, <b>Book Value Per Share (mrq)</b>."},
+  {id:"pb",l:"Price / Book",v:q=>q.pb==null?NA:q.pb.toFixed(2),def:"Price divided by book value per share. Compares the market's price to the company's value on paper. When book value is negative there is no P/B.",m:q=>q.bvps==null?null:q.pb==null?`Book value is ${f2(q.bvps)} (negative), so P/B isn't meaningful`:`${f2(q.price)} ÷ ${f2(q.bvps)} = ${q.pb.toFixed(2)}`,y:"Statistics tab, <b>Price/Book (mrq)</b>."}
+ ]},
+ {t:"Paying shareholders",items:[
+  {id:"div",l:"Dividend",v:q=>q.div>0?`${f2(q.div)} (${(q.yield*100).toFixed(2)}%)`:"None",def:"Cash the company pays each year for every share you own. The yield is that cash as a percent of the price. Many growth companies pay none.",m:q=>q.div>0?`${f2(q.div)} ÷ ${f2(q.price)} = ${(q.yield*100).toFixed(2)}% yield`:"No dividend is paid, so the yield is 0%",y:"Summary tab, <b>Forward Dividend & Yield</b>."}
+ ]}
+];
+function statHTML(it,q){
+  const open=UI.open.has(it.id),hidden=UI.quiz&&!UI.shown.has(it.id);
+  const val=hidden?`<span class="blank" data-reveal="${it.id}">Find it</span>`:it.v(q);
+  const math=!hidden&&it.m?it.m(q):null;
+  return`<div class="stat" data-open="${open}"><button class="stat-row" data-stat="${it.id}" aria-expanded="${open}"><span class="lab">${it.l}</span><span class="val">${val}</span><span class="chev" aria-hidden="true">›</span></button>`+
+    (open?`<div class="stat-body"><p>${esc(it.def)}</p>${hidden?"":(it.x?it.x(q):"")}${math?`<div class="math">${math}</div>`:""}<p class="where">On Yahoo Finance: ${it.y}</p></div>`:"")+`</div>`;
+}
+function renderGroups(q){$("#groups").innerHTML=GROUPS.map(g=>`<section class="group"><div class="group-h"><h3>${g.t}</h3><span class="gn">${g.items.length} ${g.items.length>1?"terms":"term"}</span></div>${g.items.map(it=>statHTML(it,q)).join("")}</section>`).join("")}
+function renderQuoteHead(q){
+  const hid=UI.quiz;
+  $("#px").textContent=hid?"?":f2(q.price);
+  const c=$("#chg");c.className="chg "+(hid?"flat":dir(q.chg));c.textContent=hid?"Find the price change":`${arrow(q.chg)} ${sgn(q.chg)} (${pct(q.chgPct)})`;
+  $("#asof").textContent=(INFO.state==="pre"?"Previous close · ":INFO.state==="open"?"As of "+INFO.timeLabel+" ET · ":"At close · ")+INFO.dayLabel+(INFO.state==="snapshot"?" (snapshot)":" (replay)");
+  const cell=(k,v)=>`<div><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  $("#ba").innerHTML=hid?cell("Bid","?")+cell("Ask","?")+cell("Spread","?"):
+    cell("Bid",q.bid==null?"–":`${f2(q.bid)} <small>× ${q.bidSize}</small>`)+cell("Ask",q.ask==null?"–":`${f2(q.ask)} <small>× ${q.askSize}</small>`)+cell("Spread",q.spread==null?"–":f2(q.spread));
+}
+function renderStock(){
+  const tk=R.tk,m=META[tk],c=catBySlug[m[1]],q=quote(tk,INFO);
+  $("#view").innerHTML=`<a class="back" href="#trade-${c.slug}">← ${esc(c.name)}</a>
+  <div class="quote-head"><div><div class="tk-line"><h1 class="tk">${tk}</h1><span class="tag">${esc(m[4]||"?")}</span><span class="role">${esc(m[3])}</span></div><div class="co-name">${esc(m[0])}</div><p class="what">${esc(m[5])}</p></div>
+  <div class="px-block"><div class="px" id="px"></div><div class="chg" id="chg"></div><div class="asof" id="asof"></div></div></div>
+  <div class="bidask" id="ba"></div>
+  <div class="chart-card"><div class="chart-tools">
+    <div class="seg" role="group" aria-label="Time range">${["1D","5D","1M","6M","1Y","5Y"].map(r=>`<button data-range="${r}" aria-pressed="${UI.range===r}">${r}</button>`).join("")}</div>
+    <div class="seg" role="group" aria-label="Chart type"><button data-type="area" aria-pressed="${UI.type==="area"}">Line</button><button data-type="candle" aria-pressed="${UI.type==="candle"}" ${UI.cmp?"disabled":""}>Candles</button></div>
+    <label class="toggle"><input type="checkbox" id="tVol" ${UI.vol?"checked":""}> Volume</label>
+    <label class="toggle"><input type="checkbox" id="tMa" ${UI.ma?"checked":""}> 50-day average</label>
+    <label class="toggle"><input type="checkbox" id="tCmp" ${UI.cmp?"checked":""}> Compare with S&amp;P 500</label>
+  </div><div id="chart"></div></div>
+  <div class="sheet-tools"><h2>Key numbers</h2><button class="btn" id="quizBtn" aria-pressed="${UI.quiz}">${UI.quiz?"Show all numbers":"Hide numbers (sleuth mode)"}</button></div>
+  <div class="groups" id="groups"></div>
+  <aside class="hook"><span class="hook-mark" aria-hidden="true">?</span><div><div class="eyebrow">Dig deeper</div><p>${esc(m[6])}</p></div></aside>`;
+  renderQuoteHead(q);renderGroups(q);drawChart();
+}
+
+/* ---------- chart ---------- */
+let CH=null;
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function chartBars(tk,range){
+  const d=DATA[tk],L=d.today.length,idx=INFO.idx,k=INFO.key;
+  const todayBars=[];if(idx>=0){const n=Math.min(idx+1,L);for(let i=0;i<n;i++){const b=d.today[i];todayBars.push({time:ts(k,570+i),open:b.o,high:b.h,low:b.l,close:b.c,volume:b.v})}}
+  if(range==="1D"){const ws=[];for(let i=todayBars.length;i<L;i++)ws.push({time:ts(k,570+i)});return{intraday:true,bars:todayBars,ws,base:d.prev}}
+  const h=d.hist;
+  if(range==="5D"){const out=h.fiveMin.slice();for(let i=0;i<todayBars.length;i+=5)out.push(agg(todayBars.slice(i,i+5).map(b=>({o:b.open,h:b.high,l:b.low,c:b.close,v:b.volume})),todayBars[i].time));return{intraday:true,bars:out,ws:[],base:out.length?out[0].open:1}}
+  const daily=h.daily.slice();
+  if(idx>=0){const n=Math.min(idx+1,L);daily.push(agg(d.today.slice(0,n),k))}
+  let bars;
+  if(range==="5Y"){bars=[];let cur=null;for(const b of daily){const dt=new Date(b.time+"T00:00:00Z");const mon=new Date(dt);mon.setUTCDate(dt.getUTCDate()-((dt.getUTCDay()+6)%7));const key=isoUTC(mon);if(!cur||cur.time!==key){cur={time:key,open:b.open,high:b.high,low:b.low,close:b.close,volume:b.volume};bars.push(cur)}else{cur.high=Math.max(cur.high,b.high);cur.low=Math.min(cur.low,b.low);cur.close=b.close;cur.volume+=b.volume}}}
+  else bars=daily.slice(-{"1M":21,"6M":126,"1Y":252}[range]);
+  return{intraday:false,bars,all:daily,base:bars.length?bars[0].open:1};
+}
+function chartNote(el,msg){el.insertAdjacentHTML("beforeend",`<div class="chart-note">${msg}</div>`)}
+function drawChart(){
+  const el=$("#chart");if(!el)return;
+  if(CH){CH.remove();CH=null}
+  el.innerHTML="";
+  if(!window.LightweightCharts){chartNote(el,"The chart library didn't load. Check the network and reload the page.");return}
+  const bench=SRC.benchmark;
+  if(UI.range!=="1D"){
+    const need=[R.tk].concat(UI.cmp?[bench]:[]).filter(s=>!DATA[s].hist);
+    if(need.length){
+      const tk=R.tk,range=UI.range,cmp=UI.cmp;chartNote(el,"Loading chart…");
+      Promise.all(need.map(loadHist)).then(()=>{if(R.tk===tk&&UI.range===range&&UI.cmp===cmp)drawChart()})
+        .catch(()=>{if(R.tk===tk){el.innerHTML="";chartNote(el,"This chart's history didn't load. The 1D chart still works.")}});
+      return;
+    }
+  }
+  const muted=cssv("--muted"),grid=cssv("--chart-grid"),line=cssv("--line");
+  const pctMode=UI.cmp;
+  CH=LightweightCharts.createChart(el,{autoSize:true,layout:{background:{type:"solid",color:"transparent"},textColor:muted,fontFamily:"IBM Plex Mono, ui-monospace, monospace",fontSize:11},
+    grid:{vertLines:{color:grid},horzLines:{color:grid}},rightPriceScale:{borderColor:line},timeScale:{borderColor:line,timeVisible:true,secondsVisible:false},
+    crosshair:{mode:0},localization:pctMode?{priceFormatter:p=>(p>0?"+":"")+p.toFixed(2)+"%"}:{priceFormatter:p=>f2(p)}});
+  const cd=chartBars(R.tk,UI.range);
+  if(!cd.bars.length)chartNote(el,"The replay market hasn't opened yet. Trading starts at 9:30 AM.");
+  const toPct=(v,b)=>(v/b-1)*100;
+  if(pctMode){
+    const s=CH.addLineSeries({color:cssv("--chart-line"),lineWidth:2,priceLineVisible:false,title:R.tk});
+    s.setData(cd.bars.map(b=>({time:b.time,value:toPct(b.close,cd.base)})).concat(cd.ws||[]));
+    const sb=chartBars(bench,UI.range);
+    CH.addLineSeries({color:cssv("--bench"),lineWidth:2,priceLineVisible:false,title:"S&P 500"}).setData(sb.bars.map(b=>({time:b.time,value:toPct(b.close,sb.base)})));
+    s.createPriceLine({price:0,color:muted,lineWidth:1,lineStyle:2,axisLabelVisible:false});
+  } else {
+    let s;
+    if(UI.type==="candle"){const up=cssv("--up"),dn=cssv("--down");s=CH.addCandlestickSeries({upColor:up,downColor:dn,borderUpColor:up,borderDownColor:dn,wickUpColor:up,wickDownColor:dn,priceLineVisible:false});s.setData(cd.bars.map(b=>({time:b.time,open:b.open,high:b.high,low:b.low,close:b.close})).concat(cd.ws||[]))}
+    else{s=CH.addAreaSeries({lineColor:cssv("--chart-line"),topColor:cssv("--chart-top"),bottomColor:cssv("--chart-bottom"),lineWidth:2,priceLineVisible:false});s.setData(cd.bars.map(b=>({time:b.time,value:b.close})).concat(cd.ws||[]))}
+    if(UI.range==="1D"&&cd.bars.length)s.createPriceLine({price:cd.base,color:muted,lineWidth:1,lineStyle:2,axisLabelVisible:true,title:"Prev close"});
+    if(UI.ma&&!cd.intraday){const all=cd.all,first=all.length-(UI.range==="5Y"?all.length:cd.bars.length),ma=[];
+      if(UI.range==="5Y"){for(let i=9;i<cd.bars.length;i++){let t=0;for(let j=i-9;j<=i;j++)t+=cd.bars[j].close;ma.push({time:cd.bars[i].time,value:t/10})}}
+      else for(let i=Math.max(first,49);i<all.length;i++){let t=0;for(let j=i-49;j<=i;j++)t+=all[j].close;ma.push({time:all[i].time,value:t/50})}
+      CH.addLineSeries({color:cssv("--bench"),lineWidth:1.5,priceLineVisible:false,lastValueVisible:false,title:"50-day avg"}).setData(ma)}
+    if(UI.vol&&cd.bars.length){const v=CH.addHistogramSeries({priceFormat:{type:"volume"},priceScaleId:"",lastValueVisible:false,priceLineVisible:false});v.priceScale().applyOptions({scaleMargins:{top:.8,bottom:0}});
+      const vu=cssv("--vol-up"),vd=cssv("--vol-down");v.setData(cd.bars.map(b=>({time:b.time,value:b.volume,color:b.close>=b.open?vu:vd})))}
+  }
+  CH.timeScale().fitContent();
+}
+
+/* ---------- main loop ---------- */
+function render(full){
+  INFO=replayInfo();ensureData(INFO.key);renderClock();
+  const sig=INFO.key+"|"+INFO.idx+"|"+INFO.state;
+  const changed=sig!==LASTSIG;LASTSIG=sig;
+  if(full){renderTrades();if(R.view==="stock")renderStock();else if(R.view==="trade")renderTrade();else renderAll();return}
+  if(!changed)return;
+  if(R.view==="stock"){const q=quote(R.tk,INFO);renderQuoteHead(q);renderGroups(q);if(UI.range==="1D"||UI.range==="5D"||INFO.idx>=0)drawChart()}
+  else if(R.view==="trade")renderTrade();else renderAll();
+}
+
+/* ---------- events ---------- */
+window.addEventListener("hashchange",()=>{const prev=R.tk;R=route();if(R.tk!==prev){UI.open.clear();UI.shown.clear()}render(true);window.scrollTo(0,0)});
+document.addEventListener("click",e=>{
+  const rev=e.target.closest("[data-reveal]");if(rev){UI.shown.add(rev.dataset.reveal);UI.open.add(rev.dataset.reveal);renderGroups(quote(R.tk,INFO));e.stopPropagation();return}
+  const st=e.target.closest("[data-stat]");if(st){const id=st.dataset.stat;UI.open.has(id)?UI.open.delete(id):UI.open.add(id);renderGroups(quote(R.tk,INFO));const b=document.querySelector(`[data-stat="${id}"]`);if(b)b.focus();return}
+  const rg=e.target.closest("[data-range]");if(rg){UI.range=rg.dataset.range;document.querySelectorAll("[data-range]").forEach(b=>b.setAttribute("aria-pressed",b===rg));drawChart();return}
+  const ty=e.target.closest("[data-type]");if(ty&&!ty.disabled){UI.type=ty.dataset.type;document.querySelectorAll("[data-type]").forEach(b=>b.setAttribute("aria-pressed",b===ty));drawChart();return}
+  if(e.target.closest("#quizBtn")){UI.quiz=!UI.quiz;UI.shown.clear();const b=$("#quizBtn");b.setAttribute("aria-pressed",UI.quiz);b.textContent=UI.quiz?"Show all numbers":"Hide numbers (sleuth mode)";const q=quote(R.tk,INFO);renderQuoteHead(q);renderGroups(q);return}
+  const row=e.target.closest("tr[data-tk]");if(row&&!e.target.closest("a")){location.hash="stock-"+row.dataset.tk.toLowerCase();return}
+});
+document.addEventListener("change",e=>{
+  const id=e.target.id;
+  if(id==="tVol"){UI.vol=e.target.checked;drawChart()}
+  else if(id==="tMa"){UI.ma=e.target.checked;drawChart()}
+  else if(id==="tCmp"){UI.cmp=e.target.checked;const c=document.querySelector('[data-type="candle"]');if(c)c.disabled=UI.cmp;drawChart()}
+  else if(id==="modeReplay"||id==="modeSnap"){SETTINGS.mode=e.target.value;saveSettings();render(true)}
+  else if(id==="lagHours"){const v=Math.min(47,Math.max(1,parseInt(e.target.value,10)||22));SETTINGS.lag=v;e.target.value=v;saveSettings();render(true)}
+  else if(id==="scrubOn"){SETTINGS.scrub=e.target.checked;saveSettings();render(true)}
+});
+document.addEventListener("input",e=>{if(e.target.id==="scrubRange"){SETTINGS.scrubVal=Number(e.target.value);if(!SETTINGS.scrub){SETTINGS.scrub=true;$("#scrubOn").checked=true}saveSettings();render(false)}});
+$("#settingsBtn").addEventListener("click",()=>{const s=$("#settings"),open=s.hidden;s.hidden=!open;$("#settingsBtn").setAttribute("aria-expanded",open)});
+function initSettingsUI(){$("#modeReplay").checked=SETTINGS.mode!=="snapshot";$("#modeSnap").checked=SETTINGS.mode==="snapshot";$("#lagHours").value=SETTINGS.lag;$("#scrubOn").checked=!!SETTINGS.scrub;const sr=$("#scrubRange");sr.max=SRC.L;sr.value=SETTINGS.scrubVal}
+const reTheme=()=>{if(R.view==="stock")drawChart()};
+try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",reTheme)}catch(e){}
+new MutationObserver(reTheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+(async()=>{
+  await loadSummary();
+  renderSource();initSettingsUI();
+  INFO=replayInfo();ensureData(INFO.key);R=route();
+  render(true);setInterval(()=>render(false),5000);
+})();
+</script>
+
+</body>
+</html>
