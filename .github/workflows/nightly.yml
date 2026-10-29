@@ -1,0 +1,48 @@
+name: Nightly market data
+
+on:
+  schedule:
+    # 22:40 UTC = 6:40 PM Eastern in summer (EDT), 5:40 PM in winter (EST). Monday–Friday.
+    - cron: "40 22 * * 1-5"
+  workflow_dispatch: {}   # adds a "Run workflow" button on the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Fetch market data
+        env:
+          ALPACA_KEY_ID: ${{ secrets.ALPACA_KEY_ID }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
+          ALPACA_FEED: ${{ vars.ALPACA_FEED || 'sip' }}
+        run: python scripts/update_data.py
+
+      - name: Save the new data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "No changes."
+          else
+            git commit -m "Market data for $(jq -r .replay_day data/summary.json)"
+            git push
+          fi
