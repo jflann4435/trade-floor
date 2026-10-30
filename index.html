@@ -148,6 +148,8 @@ table.board{width:100%;border-collapse:collapse;font-size:14px}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .seg button:disabled{opacity:.4;cursor:default}
+.ma-hint{font-size:12.5px;color:var(--muted)}
+.where a{color:var(--blue)}
 .toggle{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
 #chart{height:340px;position:relative}
 @media (max-width:700px){#chart{height:260px}}
@@ -528,7 +530,8 @@ const GROUPS=[
   {id:"prev",l:"Previous Close",v:q=>f2(q.prev),def:"The last price at the close on the trading day before this one. Today's change is measured from here.",y:"Summary tab, <b>Previous Close</b>."},
   {id:"chg",l:"Price Change",v:q=>`<span class="${dir(q.chg)}">${sgn(q.chg)} (${pct(q.chgPct)})</span>`,def:"How far the price has moved since the previous close, in dollars and as a percent.",m:q=>`${f2(q.price)} − ${f2(q.prev)} = ${sgn(q.chg)}<br>${sgn(q.chg)} ÷ ${f2(q.prev)} = ${pct(q.chgPct)}`,y:"Next to the big price, in green or red."},
   {id:"day",l:"Day's Range",v:q=>q.lo==null?"–":`${f2(q.lo)} – ${f2(q.hi)}`,def:"The lowest and highest prices traded so far today. The marker shows where the current price sits in that range.",x:q=>tape(q.lo,q.hi,q.price),y:"Summary tab, <b>Day's Range</b>."},
-  {id:"vol",l:"Volume",v:q=>q.vol.toLocaleString("en-US"),def:"How many shares have traded today. Compare it with the average: much higher than usual often means news.",m:q=>`Today ${big(q.vol)} vs. 3-month average ${big(q.avgVol)}`,y:"Summary tab, <b>Volume</b> and <b>Avg. Volume</b>."}
+  {id:"vol",l:"Volume",v:q=>q.vol.toLocaleString("en-US"),def:"How many shares have traded today. Compare it with the average: much higher than usual often means news.",m:q=>`Today ${big(q.vol)} vs. 3-month average ${big(q.avgVol)}`,y:"Summary tab, <b>Volume</b>."},
+  {id:"avgvol",l:"Avg. Volume",v:q=>Math.round(q.avgVol).toLocaleString("en-US"),def:"The average number of shares traded per day over the last 3 months (about 63 trading days). It's the yardstick for deciding whether today's volume is unusual.",m:q=>`Today ${big(q.vol)} ÷ average ${big(q.avgVol)} = ${(q.vol/q.avgVol).toFixed(2)}× a normal day`+(INFO&&INFO.state==="open"?"<br>The trading day isn't over yet, so today's number is still growing":""),y:"Summary tab, <b>Avg. Volume</b>."}
  ]},
  {t:"Buying & selling",items:[
   {id:"bid",l:"Bid",v:q=>q.bid==null?NA:`${f2(q.bid)} × ${q.bidSize}`,def:"The highest price a buyer is offering right now. The number after the × is how many shares they want.",y:"Summary tab, <b>Bid</b>."},
@@ -538,7 +541,7 @@ const GROUPS=[
  {t:"The bigger picture",items:[
   {id:"wk52",l:"52-Week Range",v:q=>`${f2(q.wkLo)} – ${f2(q.wkHi)}`,def:"The lowest and highest prices over the past year. Shows whether today's price is near a high, a low, or in between.",x:q=>tape(q.wkLo,q.wkHi,q.price),y:"Summary tab, <b>52 Week Range</b>."},
   {id:"beta",l:"Beta",v:q=>q.beta==null?NA:q.beta.toFixed(2),def:"How much the stock tends to move compared with the whole market (the S&P 500). 1.0 moves with the market, 2.0 moves about twice as much, 0.5 about half as much. Calculated from 5 years of monthly prices.",m:q=>q.beta==null?null:`If the market moves 1%, this stock tends to move about ${q.beta.toFixed(2)}%`,y:"Summary tab, <b>Beta (5Y Monthly)</b>."},
-  {id:"target",l:"1y Target Est",v:q=>q.target==null?`<span class="flat">Not entered</span>`:f2(q.target),def:"The average price that Wall Street analysts expect in one year. It's a forecast, and forecasts are often wrong.",m:q=>q.target==null?null:`(${f2(q.target)} − ${f2(q.price)}) ÷ ${f2(q.price)} = ${pct((q.target-q.price)/q.price)} expected move`+(q.targetAsof?`<br>Copied from Yahoo Finance on ${asOf(q.targetAsof)}`:""),y:"Summary tab, <b>1y Target Est</b>."}
+  {id:"target",l:"1y Target Est",v:q=>q.target==null?`<span class="flat">Not entered</span>`:f2(q.target),def:"The average price that Wall Street analysts expect in one year. It's a forecast, and forecasts are often wrong.",m:q=>q.target==null?null:`(${f2(q.target)} − ${f2(q.price)}) ÷ ${f2(q.price)} = ${pct((q.target-q.price)/q.price)} expected move`+(q.targetAsof?`<br>Copied from Yahoo Finance on ${asOf(q.targetAsof)}`:""),y:q=>`Summary tab, <a href="https://finance.yahoo.com/quote/${encodeURIComponent(q.tk)}/" target="_blank" rel="noopener"><b>1y Target Est</b></a>.`}
  ]},
  {t:"What the company is worth",items:[
   {id:"mcap",l:"Market Cap",v:q=>q.mcap==null?NA:"$"+big(q.mcap),def:"The total value of all the company's shares. It's how big the company is in the stock market's eyes.",m:q=>q.mcap==null?null:`${f2(q.price)} × ${big(q.shares)} shares = $${big(q.mcap)}`,y:"Summary tab, <b>Market Cap (intraday)</b>."},
@@ -556,7 +559,7 @@ function statHTML(it,q){
   const val=hidden?`<span class="blank" data-reveal="${it.id}">Find it</span>`:it.v(q);
   const math=!hidden&&it.m?it.m(q):null;
   return`<div class="stat" data-open="${open}"><button class="stat-row" data-stat="${it.id}" aria-expanded="${open}"><span class="lab">${it.l}</span><span class="val">${val}</span><span class="chev" aria-hidden="true">›</span></button>`+
-    (open?`<div class="stat-body"><p>${esc(it.def)}</p>${hidden?"":(it.x?it.x(q):"")}${math?`<div class="math">${math}</div>`:""}<p class="where">On Yahoo Finance: ${it.y}</p></div>`:"")+`</div>`;
+    (open?`<div class="stat-body"><p>${esc(it.def)}</p>${hidden?"":(it.x?it.x(q):"")}${math?`<div class="math">${math}</div>`:""}<p class="where">On Yahoo Finance: ${typeof it.y==="function"?it.y(q):it.y}</p></div>`:"")+`</div>`;
 }
 function renderGroups(q){$("#groups").innerHTML=GROUPS.map(g=>`<section class="group"><div class="group-h"><h3>${g.t}</h3><span class="gn">${g.items.length} ${g.items.length>1?"terms":"term"}</span></div>${g.items.map(it=>statHTML(it,q)).join("")}</section>`).join("")}
 function renderQuoteHead(q){
@@ -579,6 +582,7 @@ function renderStock(){
     <div class="seg" role="group" aria-label="Chart type"><button data-type="area" aria-pressed="${UI.type==="area"}">Line</button><button data-type="candle" aria-pressed="${UI.type==="candle"}" ${UI.cmp?"disabled":""}>Candles</button></div>
     <label class="toggle"><input type="checkbox" id="tVol" ${UI.vol?"checked":""}> Volume</label>
     <label class="toggle"><input type="checkbox" id="tMa" ${UI.ma?"checked":""}> 50-day average</label>
+    <span class="ma-hint" id="maHint" hidden></span>
     <label class="toggle"><input type="checkbox" id="tCmp" ${UI.cmp?"checked":""}> Compare with S&amp;P 500</label>
   </div><div id="chart"></div></div>
   <div class="sheet-tools"><h2>Key numbers</h2><button class="btn" id="quizBtn" aria-pressed="${UI.quiz}">${UI.quiz?"Show all numbers":"Hide numbers (sleuth mode)"}</button></div>
@@ -608,6 +612,7 @@ function drawChart(){
   const el=$("#chart");if(!el)return;
   if(CH){CH.remove();CH=null}
   el.innerHTML="";
+  const hint=$("#maHint");if(hint){const intra=UI.range==="1D"||UI.range==="5D";hint.hidden=!(UI.ma&&(intra||UI.cmp));hint.textContent=UI.cmp?"Turn off Compare to see the 50-day average.":"The 50-day average shows on 1M, 6M, 1Y and 5Y.";}
   if(!window.LightweightCharts){chartNote(el,"The chart library didn't load. Check the network and reload the page.");return}
   const bench=SRC.benchmark;
   if(UI.range!=="1D"){
@@ -672,7 +677,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   const id=e.target.id;
   if(id==="tVol"){UI.vol=e.target.checked;drawChart()}
-  else if(id==="tMa"){UI.ma=e.target.checked;drawChart()}
+  else if(id==="tMa"){UI.ma=e.target.checked;if(UI.ma&&!UI.cmp&&(UI.range==="1D"||UI.range==="5D")){UI.range="6M";document.querySelectorAll("[data-range]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.range==="6M"))}drawChart()}
   else if(id==="tCmp"){UI.cmp=e.target.checked;const c=document.querySelector('[data-type="candle"]');if(c)c.disabled=UI.cmp;drawChart()}
   else if(id==="modeReplay"||id==="modeSnap"){SETTINGS.mode=e.target.value;saveSettings();render(true)}
   else if(id==="lagHours"){const v=Math.min(47,Math.max(1,parseInt(e.target.value,10)||22));SETTINGS.lag=v;e.target.value=v;saveSettings();render(true)}
