@@ -14,6 +14,7 @@ A script runs every weekday evening on GitHub's free servers. It pulls the day's
 | `.github/workflows/nightly.yml` | Tells GitHub when to run the script |
 | `data/` | Sample data so the site works before the first real run. The script replaces it |
 | `requirements.txt`, `robots.txt` | Support files (`robots.txt` asks search engines not to list the site) |
+| `vendor/` | The chart library, stored with the site so the school filter only has to allow one address |
 
 ---
 
@@ -102,6 +103,6 @@ GitHub pauses scheduled jobs in repositories that go 60 days without activity. I
 
 - **Who can see it.** Anyone with the link can open the site, but search engines are asked not to list it. Share the link through your class page rather than publicly.
 - **Data terms.** Read Alpaca's market-data terms before sharing the site widely. By default the script uses Alpaca's **SIP** feed (all U.S. exchanges), which matches Yahoo best. To use only the free IEX exchange feed, go to **Settings → Secrets and variables → Actions → Variables** and add `ALPACA_FEED` with the value `iex`. Prices stay close, but volume will look far smaller than Yahoo's.
-- **School filters.** Open the site on a student Chromebook early to make sure `github.io` isn't blocked.
+- **School filters.** Filters often block `github.io` as a shared-hosting domain. Ask IT to allow your own address (`yourname.github.io`), which only covers sites published from your account. That one address is all the site needs; Google Fonts is optional and the page falls back to standard fonts without it.
 - **Charts** use TradingView Lightweight Charts, which requires the credit line at the bottom of the page. Keep it.
 - **Testing without keys.** On a computer with Python, `pip install -r requirements.txt` then `python scripts/update_data.py --demo` writes sample data to `data/`.
